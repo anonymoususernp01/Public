@@ -1,0 +1,51 @@
+name: Deploy Multi-App Portfolio to Pages
+
+on:
+  push:
+    branches: ["main"] # Change to "master" if your default branch name is master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install Tic-Tac-Toe Dependencies
+        run: npm ci
+        working-directory: ./tic-tac-toe
+        
+      - name: Build Tic-Tac-Toe
+        run: npm run build
+        working-directory: ./tic-tac-toe
+
+      - name: Structure Public folder output
+        run: |
+          mkdir -p final-output/tic-tac-toe
+          cp -r tic-tac-toe/dist/* final-output/tic-tac-toe/
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './final-output'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
